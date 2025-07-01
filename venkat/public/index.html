@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Team Selection - Home</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-cricket-bat-ball"></i> Cricket Team Selection</h1>
+                <p>Create or join a room to start selecting your dream cricket team!</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="action-cards">
+                <!-- Create Room Card -->
+                <div class="card create-room-card">
+                    <div class="card-header">
+                        <i class="fas fa-plus-circle"></i>
+                        <h2>Create New Room</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Start a new team selection room and invite your friends!</p>
+                        <form id="createRoomForm" class="form">
+                            <div class="form-group">
+                                <label for="hostName">Your Name</label>
+                                <input type="text" id="hostName" name="hostName" placeholder="Enter your name" required maxlength="20">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-rocket"></i> Create Room
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Join Room Card -->
+                <div class="card join-room-card">
+                    <div class="card-header">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <h2>Join Existing Room</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Enter a room code to join an existing team selection!</p>
+                        <form id="joinRoomForm" class="form">
+                            <div class="form-group">
+                                <label for="roomCode">Room Code</label>
+                                <input type="text" id="roomCode" name="roomCode" placeholder="Enter room code" required maxlength="8">
+                            </div>
+                            <div class="form-group">
+                                <label for="playerName">Your Name</label>
+                                <input type="text" id="playerName" name="playerName" placeholder="Enter your name" required maxlength="20">
+                            </div>
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-door-open"></i> Join Room
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Rooms Section -->
+            <div class="active-rooms-section">
+                <h3><i class="fas fa-list"></i> Active Rooms</h3>
+                <div id="activeRoomsList" class="rooms-list">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading rooms...
+                    </div>
+                </div>
+                <button id="refreshRooms" class="btn btn-outline">
+                    <i class="fas fa-refresh"></i> Refresh
+                </button>
+            </div>
+        </main>
+
+        <!-- How to Play Section -->
+        <section class="how-to-play">
+            <h3><i class="fas fa-question-circle"></i> How to Play</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Create or Join</h4>
+                        <p>Create a new room or join an existing one with a room code</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Wait for Players</h4>
+                        <p>Wait for at least 2 players to join the room</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Start Selection</h4>
+                        <p>Host starts the selection and turn order is randomized</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Pick Players</h4>
+                        <p>Take turns selecting cricket players (10 seconds per turn)</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Build Your Team</h4>
+                        <p>Select 5 players each to complete your dream team!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Creating room...</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>

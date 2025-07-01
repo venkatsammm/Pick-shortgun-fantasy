@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Team Selection - Room</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/room.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="room-container">
+        <!-- Header -->
+        <header class="room-header">
+            <div class="room-info">
+                <h1><i class="fas fa-cricket-bat-ball"></i> Room: <span id="roomId">Loading...</span></h1>
+                <div class="room-status">
+                    <span id="gameStatus" class="status-badge waiting">Waiting for players</span>
+                    <span id="playerCount" class="player-count">0 players</span>
+                </div>
+            </div>
+            <div class="room-actions">
+                <button id="shareRoom" class="btn btn-outline">
+                    <i class="fas fa-share"></i> Share Room
+                </button>
+                <button id="leaveRoom" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Leave
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="room-main">
+            <!-- Waiting Screen -->
+            <div id="waitingScreen" class="screen waiting-screen">
+                <div class="waiting-content">
+                    <div class="players-section">
+                        <h3><i class="fas fa-users"></i> Players in Room</h3>
+                        <div id="playersList" class="players-list">
+                            <!-- Players will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="waiting-actions">
+                        <div id="hostControls" class="host-controls hidden">
+                            <p>You are the host. Start the selection when ready!</p>
+                            <button id="startSelection" class="btn btn-primary btn-large">
+                                <i class="fas fa-play"></i> Start Team Selection
+                            </button>
+                        </div>
+                        <div id="playerWaiting" class="player-waiting">
+                            <p>Waiting for the host to start the selection...</p>
+                            <div class="waiting-animation">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selection Screen -->
+            <div id="selectionScreen" class="screen selection-screen hidden">
+                <!-- Turn Info -->
+                <div class="turn-info">
+                    <div id="currentTurn" class="current-turn">
+                        <span class="turn-label">Current Turn:</span>
+                        <span id="currentPlayer" class="current-player">-</span>
+                    </div>
+                    <div id="turnTimer" class="turn-timer">
+                        <i class="fas fa-clock"></i>
+                        <span id="timeRemaining">10</span>s
+                    </div>
+                </div>
+
+                <!-- Turn Order -->
+                <div class="turn-order">
+                    <h4><i class="fas fa-list-ol"></i> Turn Order</h4>
+                    <div id="turnOrderList" class="turn-order-list">
+                        <!-- Turn order will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Available Players -->
+                <div class="available-players">
+                    <h4><i class="fas fa-users"></i> Available Players</h4>
+                    <div class="players-filter">
+                        <select id="roleFilter">
+                            <option value="">All Roles</option>
+                            <option value="Batsman">Batsman</option>
+                            <option value="Bowler">Bowler</option>
+                            <option value="All-rounder">All-rounder</option>
+                            <option value="Wicket-keeper">Wicket-keeper</option>
+                        </select>
+                        <select id="countryFilter">
+                            <option value="">All Countries</option>
+                            <option value="India">India</option>
+                            <option value="Australia">Australia</option>
+                            <option value="England">England</option>
+                            <option value="Pakistan">Pakistan</option>
+                            <option value="South Africa">South Africa</option>
+                            <option value="New Zealand">New Zealand</option>
+                            <option value="West Indies">West Indies</option>
+                            <option value="Sri Lanka">Sri Lanka</option>
+                            <option value="Bangladesh">Bangladesh</option>
+                            <option value="Afghanistan">Afghanistan</option>
+                        </select>
+                    </div>
+                    <div id="availablePlayersList" class="players-grid">
+                        <!-- Available players will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Selected Teams -->
+                <div class="selected-teams">
+                    <h4><i class="fas fa-trophy"></i> Selected Teams</h4>
+                    <div id="teamsDisplay" class="teams-display">
+                        <!-- Teams will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="resultsScreen" class="screen results-screen hidden">
+                <div class="results-content">
+                    <h2><i class="fas fa-trophy"></i> Team Selection Complete!</h2>
+                    <div id="finalResults" class="final-results">
+                        <!-- Final results will be populated here -->
+                    </div>
+                    <div class="results-actions">
+                        <button id="newGame" class="btn btn-primary">
+                            <i class="fas fa-redo"></i> New Game
+                        </button>
+                        <button id="backToHome" class="btn btn-secondary">
+                            <i class="fas fa-home"></i> Back to Home
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p id="loadingText">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="modal-actions">
+                <button id="confirmYes" class="btn btn-primary">Yes</button>
+                <button id="confirmNo" class="btn btn-secondary">No</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/room.js"></script>
+</body>
+</html>
