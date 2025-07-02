@@ -1,8 +1,28 @@
+require('dotenv').config(); // Load env vars like MONGODB_URI
+const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-// Cricket players data with various international players
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://venkatr:cWe8o4vJBYin0meW@cluster0.8a7wnej.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB error:', err));
+
+// Mongoose Player schema and model
+const playerSchema = new mongoose.Schema({
+  id: { type: String, default: uuidv4 },
+  name: String,
+  country: String,
+  role: String,
+  rating: Number,
+  image: String
+});
+
+const Player = mongoose.model('Player', playerSchema);
+
+// Cricket Players Data
 const cricketPlayersData = [
-  // Indian Players
   { name: "Virat Kohli", country: "India", role: "Batsman", rating: 95 },
   { name: "Rohit Sharma", country: "India", role: "Batsman", rating: 92 },
   { name: "MS Dhoni", country: "India", role: "Wicket-keeper", rating: 90 },
@@ -13,8 +33,6 @@ const cricketPlayersData = [
   { name: "Mohammed Shami", country: "India", role: "Bowler", rating: 86 },
   { name: "Rishabh Pant", country: "India", role: "Wicket-keeper", rating: 84 },
   { name: "Yuzvendra Chahal", country: "India", role: "Bowler", rating: 82 },
-
-  // Australian Players
   { name: "Steve Smith", country: "Australia", role: "Batsman", rating: 93 },
   { name: "David Warner", country: "Australia", role: "Batsman", rating: 89 },
   { name: "Pat Cummins", country: "Australia", role: "Bowler", rating: 91 },
@@ -25,8 +43,6 @@ const cricketPlayersData = [
   { name: "Marcus Stoinis", country: "Australia", role: "All-rounder", rating: 83 },
   { name: "Adam Zampa", country: "Australia", role: "Bowler", rating: 80 },
   { name: "Travis Head", country: "Australia", role: "Batsman", rating: 82 },
-
-  // English Players
   { name: "Joe Root", country: "England", role: "Batsman", rating: 91 },
   { name: "Ben Stokes", country: "England", role: "All-rounder", rating: 90 },
   { name: "Jos Buttler", country: "England", role: "Wicket-keeper", rating: 87 },
@@ -37,8 +53,6 @@ const cricketPlayersData = [
   { name: "Stuart Broad", country: "England", role: "Bowler", rating: 84 },
   { name: "Eoin Morgan", country: "England", role: "Batsman", rating: 81 },
   { name: "Adil Rashid", country: "England", role: "Bowler", rating: 79 },
-
-  // Pakistani Players
   { name: "Babar Azam", country: "Pakistan", role: "Batsman", rating: 92 },
   { name: "Shaheen Afridi", country: "Pakistan", role: "Bowler", rating: 89 },
   { name: "Mohammad Rizwan", country: "Pakistan", role: "Wicket-keeper", rating: 86 },
@@ -46,49 +60,30 @@ const cricketPlayersData = [
   { name: "Shadab Khan", country: "Pakistan", role: "All-rounder", rating: 81 },
   { name: "Hasan Ali", country: "Pakistan", role: "Bowler", rating: 82 },
   { name: "Imad Wasim", country: "Pakistan", role: "All-rounder", rating: 80 },
-  { name: "Mohammad Hafeez", country: "Pakistan", role: "All-rounder", rating: 78 },
-
-  // South African Players
   { name: "AB de Villiers", country: "South Africa", role: "Batsman", rating: 94 },
   { name: "Quinton de Kock", country: "South Africa", role: "Wicket-keeper", rating: 88 },
   { name: "Kagiso Rabada", country: "South Africa", role: "Bowler", rating: 90 },
   { name: "Faf du Plessis", country: "South Africa", role: "Batsman", rating: 85 },
   { name: "Imran Tahir", country: "South Africa", role: "Bowler", rating: 83 },
-  { name: "David Miller", country: "South Africa", role: "Batsman", rating: 82 },
-
-  // New Zealand Players
   { name: "Kane Williamson", country: "New Zealand", role: "Batsman", rating: 91 },
   { name: "Trent Boult", country: "New Zealand", role: "Bowler", rating: 88 },
   { name: "Ross Taylor", country: "New Zealand", role: "Batsman", rating: 84 },
-  { name: "Martin Guptill", country: "New Zealand", role: "Batsman", rating: 82 },
   { name: "Tim Southee", country: "New Zealand", role: "Bowler", rating: 85 },
-
-  // West Indies Players
   { name: "Chris Gayle", country: "West Indies", role: "Batsman", rating: 87 },
   { name: "Andre Russell", country: "West Indies", role: "All-rounder", rating: 89 },
   { name: "Kieron Pollard", country: "West Indies", role: "All-rounder", rating: 84 },
   { name: "Nicholas Pooran", country: "West Indies", role: "Wicket-keeper", rating: 81 },
   { name: "Jason Holder", country: "West Indies", role: "All-rounder", rating: 83 },
-
-  // Sri Lankan Players
   { name: "Angelo Mathews", country: "Sri Lanka", role: "All-rounder", rating: 82 },
   { name: "Lasith Malinga", country: "Sri Lanka", role: "Bowler", rating: 85 },
-  { name: "Kusal Perera", country: "Sri Lanka", role: "Wicket-keeper", rating: 80 },
-  { name: "Wanindu Hasaranga", country: "Sri Lanka", role: "All-rounder", rating: 79 },
-
-  // Bangladesh Players
   { name: "Shakib Al Hasan", country: "Bangladesh", role: "All-rounder", rating: 86 },
   { name: "Tamim Iqbal", country: "Bangladesh", role: "Batsman", rating: 81 },
   { name: "Mushfiqur Rahim", country: "Bangladesh", role: "Wicket-keeper", rating: 80 },
-  { name: "Mustafizur Rahman", country: "Bangladesh", role: "Bowler", rating: 82 },
-
-  // Afghanistan Players
   { name: "Rashid Khan", country: "Afghanistan", role: "Bowler", rating: 88 },
-  { name: "Mohammad Nabi", country: "Afghanistan", role: "All-rounder", rating: 81 },
-  { name: "Mujeeb Ur Rahman", country: "Afghanistan", role: "Bowler", rating: 79 }
+  { name: "Mohammad Nabi", country: "Afghanistan", role: "All-rounder", rating: 81 }
 ];
 
-// Function to create player objects with unique IDs
+// Create full player objects with UUIDs and image paths
 function createCricketPlayers() {
   return cricketPlayersData.map(player => ({
     id: uuidv4(),
@@ -97,24 +92,35 @@ function createCricketPlayers() {
   }));
 }
 
-// Function to get players by role
-function getPlayersByRole(players, role) {
-  return players.filter(player => player.role === role);
+// Save players to MongoDB
+async function savePlayersToMongo() {
+  const players = createCricketPlayers();
+  await Player.deleteMany(); // Clear old data
+  await Player.insertMany(players);
+  console.log('✅ Players saved to MongoDB');
 }
 
-// Function to get players by country
-function getPlayersByCountry(players, country) {
-  return players.filter(player => player.country === country);
+// Fetch all players
+async function getAllPlayersFromMongo() {
+  return await Player.find({});
 }
 
-// Function to get top rated players
-function getTopRatedPlayers(players, count = 10) {
-  return players
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, count);
+// Filter by role
+async function getPlayersByRole(role) {
+  return await Player.find({ role: new RegExp(`^${role}$`, 'i') });
 }
 
-// Function to shuffle players array
+// Filter by country
+async function getPlayersByCountry(country) {
+  return await Player.find({ country: new RegExp(`^${country}$`, 'i') });
+}
+
+// Get top-rated players
+async function getTopRatedPlayers(count = 10) {
+  return await Player.find().sort({ rating: -1 }).limit(count);
+}
+
+// Shuffle utility
 function shufflePlayers(players) {
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -124,11 +130,23 @@ function shufflePlayers(players) {
   return shuffled;
 }
 
+// Export methods
 module.exports = {
   createCricketPlayers,
+  savePlayersToMongo,
+  getAllPlayersFromMongo,
   getPlayersByRole,
   getPlayersByCountry,
   getTopRatedPlayers,
-  shufflePlayers,
-  cricketPlayersData
+  shufflePlayers
 };
+
+// Run if executed directly
+if (require.main === module) {
+  (async () => {
+    await savePlayersToMongo();
+    const top = await getTopRatedPlayers(5);
+    console.log('Top 5 Players:', top.map(p => `${p.name} (${p.rating})`));
+    mongoose.disconnect();
+  })();
+}
