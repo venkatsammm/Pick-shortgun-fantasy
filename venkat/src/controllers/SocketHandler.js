@@ -6,48 +6,46 @@ class SocketHandler {
     this.io = io;
     this.roomManager = roomManager;
     this.turnManager = new TurnManager(io, roomManager);
-    this.cricketPlayers = createCricketPlayers(); // Initialize players once
+    this.cricketPlayers = createCricketPlayers(); 
   }
 
   handleConnection(socket) {
     console.log(`🔌 Socket connected: ${socket.id}`);
 
-    // Handle joining a room
+    
     socket.on('join-room', (data) => {
       this.handleJoinRoom(socket, data);
     });
 
-    // Handle starting selection
+    
     socket.on('start-selection', (data) => {
       this.handleStartSelection(socket, data);
     });
 
-    // Handle player selection
+  
     socket.on('select-player', (data) => {
       this.handleSelectPlayer(socket, data);
     });
 
-    // Handle getting available players
+    
     socket.on('get-available-players', () => {
       this.handleGetAvailablePlayers(socket);
     });
 
-    // Handle getting room info
+  
     socket.on('get-room-info', () => {
       this.handleGetRoomInfo(socket);
     });
 
-    // Handle getting remaining time
+  
     socket.on('get-remaining-time', () => {
       this.handleGetRemainingTime(socket);
     });
 
-    // Handle user typing/activity (optional feature)
     socket.on('user-activity', (data) => {
       this.handleUserActivity(socket, data);
     });
 
-    // Handle disconnection
     socket.on('disconnect', () => {
       this.handleDisconnection(socket);
     });
@@ -73,16 +71,16 @@ class SocketHandler {
       return;
     }
 
-    // Join the socket room
+  
     socket.join(roomId);
 
-    // Send success response to the user
+    
     socket.emit('join-room-success', {
       user: result.user,
       room: result.room.toJSON()
     });
 
-    // Broadcast to other users in the room
+    
     socket.to(roomId).emit('user-joined', {
       user: {
         id: result.user.id,
@@ -115,17 +113,17 @@ class SocketHandler {
       return;
     }
 
-    // Broadcast selection started to all users in the room
+
     this.io.to(room.id).emit('selection-started', {
       gameState: result.room.getGameSummary(),
       availablePlayers: result.room.availablePlayers,
       timestamp: Date.now()
     });
 
-    // Start the first turn
+    
     setTimeout(() => {
       this.turnManager.startTurnTimer(room.id);
-    }, 3000); // 3 second delay to let users see the turn order
+    }, 3000);
 
     console.log(`🚀 Selection started in room ${room.id} by ${user.name}`);
   }
@@ -145,7 +143,7 @@ class SocketHandler {
       return;
     }
 
-    // Success response is handled by TurnManager
+  
     console.log(`⚡ Player selected successfully by ${result.user.name}`);
   }
 
@@ -200,7 +198,7 @@ class SocketHandler {
       return;
     }
 
-    // Broadcast user activity to other users in the room
+    
     socket.to(room.id).emit('user-activity', {
       user: {
         id: user.id,
@@ -217,7 +215,7 @@ class SocketHandler {
     const result = this.roomManager.handleDisconnection(socket.id);
     
     if (result && result.room) {
-      // Notify other users in the room
+      
       socket.to(result.room.id).emit('user-left', {
         user: {
           id: result.user.id,
@@ -227,11 +225,11 @@ class SocketHandler {
         timestamp: Date.now()
       });
 
-      // If the game was in progress and this was the current turn user, handle it
+      
       if (result.room.gameState === 'selecting') {
         const currentUser = result.room.getCurrentTurnUser();
         if (currentUser && currentUser.id === result.user.id) {
-          // Auto-select for the disconnected user and continue
+        
           setTimeout(() => {
             this.turnManager.handleTurnTimeout(result.room.id, result.user.id);
           }, 1000);
@@ -241,24 +239,23 @@ class SocketHandler {
       console.log(`👋 User ${result.user.name} disconnected from room ${result.room.id}`);
     }
 
-    // Clean up any timers for rooms that might be empty now
     if (result && !result.room) {
-      // Room was deleted, clean up timers
+  
       this.turnManager.cleanup(result.user ? 'unknown' : 'unknown');
     }
   }
 
-  // Utility method to broadcast to all sockets
+  
   broadcastToAll(event, data) {
     this.io.emit(event, data);
   }
 
-  // Utility method to broadcast to a specific room
+  
   broadcastToRoom(roomId, event, data) {
     this.io.to(roomId).emit(event, data);
   }
 
-  // Get connection statistics
+  
   getStats() {
     return {
       connectedSockets: this.io.engine.clientsCount,

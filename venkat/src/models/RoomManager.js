@@ -31,11 +31,11 @@ class RoomManager {
       return { success: false, error: 'Game already in progress' };
     }
 
-    if (room.users.size >= 6) { // Max 6 users per room
+    if (room.users.size >= 6) {
       return { success: false, error: 'Room is full' };
     }
 
-    // Check if user name already exists in room
+    
     const existingUser = Array.from(room.users.values()).find(user => user.name === userName);
     if (existingUser) {
       return { success: false, error: 'Username already taken in this room' };
@@ -132,7 +132,7 @@ class RoomManager {
 
     console.log(`⚡ Player ${selectedPlayer.name} selected by ${user.name} in room ${room.id}`);
     
-    // Move to next turn
+
     const hasNextTurn = room.nextTurn();
     
     return { 
@@ -163,7 +163,7 @@ class RoomManager {
 
     console.log(`🤖 Auto-selected player ${selectedPlayer.name} for ${user.name} in room ${room.id}`);
     
-    // Move to next turn
+    
     const hasNextTurn = room.nextTurn();
     
     return { 
@@ -177,12 +177,11 @@ class RoomManager {
     };
   }
 
-  // Cleanup method for disconnected users
+  
   handleDisconnection(socketId) {
     return this.leaveRoom(socketId);
   }
 
-  // Get statistics
   getStats() {
     return {
       totalRooms: this.rooms.size,

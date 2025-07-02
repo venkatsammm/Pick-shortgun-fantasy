@@ -5,14 +5,14 @@ class Room {
     this.id = uuidv4().substring(0, 8).toUpperCase();
     this.hostName = hostName;
     this.hostSocketId = null;
-    this.users = new Map(); // socketId -> user object
-    this.gameState = 'waiting'; // waiting, selecting, finished
+    this.users = new Map(); 
+    this.gameState = 'waiting'; 
     this.turnOrder = [];
     this.currentTurnIndex = 0;
-    this.selectedPlayers = new Map(); // userId -> [players]
+    this.selectedPlayers = new Map(); 
     this.availablePlayers = [];
     this.turnTimer = null;
-    this.turnTimeLimit = 10000; // 10 seconds
+    this.turnTimeLimit = 10000; 
     this.maxPlayersPerUser = 5;
     this.createdAt = new Date();
   }
@@ -22,7 +22,7 @@ class Room {
       id: uuidv4(),
       socketId,
       name: userName,
-      isHost: this.users.size === 0, // First user is host
+      isHost: this.users.size === 0, 
       selectedPlayers: [],
       isReady: false
     };
@@ -121,14 +121,14 @@ class Room {
     // Check if selection round is complete
     if (this.isSelectionComplete()) {
       this.gameState = 'finished';
-      return false; // No more turns
+      return false;
     }
     
-    return true; // Continue with next turn
+    return true; 
   }
 
   isSelectionComplete() {
-    // Check if all users have selected maximum players
+  
     for (const user of this.users.values()) {
       if (user.selectedPlayers.length < this.maxPlayersPerUser) {
         return false;
