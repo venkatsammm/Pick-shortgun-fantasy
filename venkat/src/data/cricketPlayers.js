@@ -1,27 +1,23 @@
-require('dotenv').config(); // Load env vars like MONGODB_URI
-const mongoose = require('mongoose');
+
+const redis = require('redis');
 const { v4: uuidv4 } = require('uuid');
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://venkatr:cWe8o4vJBYin0meW@cluster0.8a7wnej.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB error:', err));
 
-// Mongoose Player schema and model
-const playerSchema = new mongoose.Schema({
-  id: { type: String, default: uuidv4 },
-  name: String,
-  country: String,
-  role: String,
-  rating: Number,
-  image: String
+const client = redis.createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
-const Player = mongoose.model('Player', playerSchema);
 
-// Cricket Players Data
+client.on('error', (err) => console.error('❌ Redis Client Error:', err));
+client.on('connect', () => console.log('✅ Redis connected'));
+
+
+async function initRedis() {
+  if (!client.isOpen) {
+    await client.connect();
+  }
+}
+
 const cricketPlayersData = [
   { name: "Virat Kohli", country: "India", role: "Batsman", rating: 95 },
   { name: "Rohit Sharma", country: "India", role: "Batsman", rating: 92 },
@@ -83,6 +79,15 @@ const cricketPlayersData = [
   { name: "Mohammad Nabi", country: "Afghanistan", role: "All-rounder", rating: 81 }
 ];
 
+
+const KEYS = {
+  ALL_PLAYERS: 'cricket:players:all',
+  PLAYER_PREFIX: 'cricket:player:',
+  ROLE_PREFIX: 'cricket:role:',
+  COUNTRY_PREFIX: 'cricket:country:',
+  RATING_SORTED: 'cricket:players:by_rating'
+};
+
 // Create full player objects with UUIDs and image paths
 function createCricketPlayers() {
   return cricketPlayersData.map(player => ({
@@ -92,32 +97,224 @@ function createCricketPlayers() {
   }));
 }
 
-// Save players to MongoDB
-async function savePlayersToMongo() {
+async function savePlayersToRedis() {
+  await initRedis();
+  
   const players = createCricketPlayers();
-  await Player.deleteMany(); // Clear old data
-  await Player.insertMany(players);
-  console.log('✅ Players saved to MongoDB');
+  
+  
+  const existingKeys = await client.keys('cricket:*');
+  if (existingKeys.length > 0) {
+    await client.del(existingKeys);
+  }
+  
+  
+  const pipeline = client.multi();
+  
+  for (const player of players) {
+    const playerKey = `${KEYS.PLAYER_PREFIX}${player.id}`;
+    
+    
+    pipeline.hSet(playerKey, {
+      id: player.id,
+      name: player.name,
+      country: player.country,
+      role: player.role,
+      rating: player.rating.toString(),
+      image: player.image
+    });
+    
+  
+    pipeline.sAdd(`${KEYS.ROLE_PREFIX}${player.role.toLowerCase()}`, player.id);
+    pipeline.sAdd(`${KEYS.COUNTRY_PREFIX}${player.country.toLowerCase()}`, player.id);
+    
+    
+    pipeline.zAdd(KEYS.RATING_SORTED, {
+      score: player.rating,
+      value: player.id
+    });
+    
+    
+    pipeline.sAdd(KEYS.ALL_PLAYERS, player.id);
+  }
+  
+  await pipeline.exec();
+  console.log('✅ Players saved to Redis');
 }
 
-// Fetch all players
-async function getAllPlayersFromMongo() {
-  return await Player.find({});
+async function getPlayerById(playerId) {
+  await initRedis();
+  const playerData = await client.hGetAll(`${KEYS.PLAYER_PREFIX}${playerId}`);
+  
+  if (Object.keys(playerData).length === 0) return null;
+  
+  return {
+    ...playerData,
+    rating: parseInt(playerData.rating)
+  };
 }
 
-// Filter by role
+async function getPlayersByIds(playerIds) {
+  await initRedis();
+  const players = [];
+  
+  for (const id of playerIds) {
+    const player = await getPlayerById(id);
+    if (player) players.push(player);
+  }
+  
+  return players;
+}
+
+
+async function getAllPlayersFromRedis() {
+  await initRedis();
+  const playerIds = await client.sMembers(KEYS.ALL_PLAYERS);
+  return await getPlayersByIds(playerIds);
+}
+
+
 async function getPlayersByRole(role) {
-  return await Player.find({ role: new RegExp(`^${role}$`, 'i') });
+  await initRedis();
+  const playerIds = await client.sMembers(`${KEYS.ROLE_PREFIX}${role.toLowerCase()}`);
+  return await getPlayersByIds(playerIds);
 }
 
 // Filter by country
 async function getPlayersByCountry(country) {
-  return await Player.find({ country: new RegExp(`^${country}$`, 'i') });
+  await initRedis();
+  const playerIds = await client.sMembers(`${KEYS.COUNTRY_PREFIX}${country.toLowerCase()}`);
+  return await getPlayersByIds(playerIds);
 }
 
-// Get top-rated players
+
 async function getTopRatedPlayers(count = 10) {
-  return await Player.find().sort({ rating: -1 }).limit(count);
+  await initRedis();
+  
+  
+  const topPlayerIds = await client.zRange(KEYS.RATING_SORTED, 0, count - 1, { REV: true });
+  return await getPlayersByIds(topPlayerIds);
+}
+
+
+async function getPlayersByRatingRange(minRating, maxRating) {
+  await initRedis();
+  const playerIds = await client.zRangeByScore(KEYS.RATING_SORTED, minRating, maxRating);
+  return await getPlayersByIds(playerIds);
+}
+
+
+async function searchPlayersByName(searchTerm) {
+  await initRedis();
+  const allPlayers = await getAllPlayersFromRedis();
+  
+  return allPlayers.filter(player => 
+    player.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+}
+
+async function getPlayerStats() {
+  await initRedis();
+  
+  const totalPlayers = await client.sCard(KEYS.ALL_PLAYERS);
+  const countries = await client.keys(`${KEYS.COUNTRY_PREFIX}*`);
+  const roles = await client.keys(`${KEYS.ROLE_PREFIX}*`);
+  
+  const stats = {
+    totalPlayers,
+    totalCountries: countries.length,
+    totalRoles: roles.length,
+    countriesBreakdown: {},
+    rolesBreakdown: {}
+  };
+  
+  
+  for (const countryKey of countries) {
+    const country = countryKey.replace(KEYS.COUNTRY_PREFIX, '');
+    const count = await client.sCard(countryKey);
+    stats.countriesBreakdown[country] = count;
+  }
+  
+
+  for (const roleKey of roles) {
+    const role = roleKey.replace(KEYS.ROLE_PREFIX, '');
+    const count = await client.sCard(roleKey);
+    stats.rolesBreakdown[role] = count;
+  }
+  
+  return stats;
+}
+
+
+async function addPlayer(playerData) {
+  await initRedis();
+  
+  const player = {
+    id: uuidv4(),
+    ...playerData,
+    image: `/images/players/${playerData.name.toLowerCase().replace(/\s+/g, '-')}.jpg`
+  };
+  
+  const playerKey = `${KEYS.PLAYER_PREFIX}${player.id}`;
+  
+  
+  await client.hSet(playerKey, {
+    id: player.id,
+    name: player.name,
+    country: player.country,
+    role: player.role,
+    rating: player.rating.toString(),
+    image: player.image
+  });
+  
+  
+  await client.sAdd(`${KEYS.ROLE_PREFIX}${player.role.toLowerCase()}`, player.id);
+  await client.sAdd(`${KEYS.COUNTRY_PREFIX}${player.country.toLowerCase()}`, player.id);
+  await client.zAdd(KEYS.RATING_SORTED, { score: player.rating, value: player.id });
+  await client.sAdd(KEYS.ALL_PLAYERS, player.id);
+  
+  return player;
+}
+
+// Update player rating
+async function updatePlayerRating(playerId, newRating) {
+  await initRedis();
+  
+  const playerKey = `${KEYS.PLAYER_PREFIX}${playerId}`;
+  const exists = await client.exists(playerKey);
+  
+  if (!exists) {
+    throw new Error('Player not found');
+  }
+  
+  
+  await client.hSet(playerKey, 'rating', newRating.toString());
+  
+  
+  await client.zAdd(KEYS.RATING_SORTED, { score: newRating, value: playerId });
+  
+  return await getPlayerById(playerId);
+}
+
+// Delete a player
+async function deletePlayer(playerId) {
+  await initRedis();
+  
+  const player = await getPlayerById(playerId);
+  if (!player) {
+    throw new Error('Player not found');
+  }
+  
+  const playerKey = `${KEYS.PLAYER_PREFIX}${playerId}`;
+  
+  
+  await client.del(playerKey);
+  await client.sRem(`${KEYS.ROLE_PREFIX}${player.role.toLowerCase()}`, playerId);
+  await client.sRem(`${KEYS.COUNTRY_PREFIX}${player.country.toLowerCase()}`, playerId);
+  await client.zRem(KEYS.RATING_SORTED, playerId);
+  await client.sRem(KEYS.ALL_PLAYERS, playerId);
+  
+  return player;
 }
 
 // Shuffle utility
@@ -130,23 +327,56 @@ function shufflePlayers(players) {
   return shuffled;
 }
 
+// Close Redis connection
+async function closeRedisConnection() {
+  if (client.isOpen) {
+    await client.disconnect();
+    console.log('✅ Redis connection closed');
+  }
+}
+
 // Export methods
 module.exports = {
+  initRedis,
   createCricketPlayers,
-  savePlayersToMongo,
-  getAllPlayersFromMongo,
+  savePlayersToRedis,
+  getAllPlayersFromRedis,
   getPlayersByRole,
   getPlayersByCountry,
   getTopRatedPlayers,
-  shufflePlayers
+  getPlayersByRatingRange,
+  searchPlayersByName,
+  getPlayerStats,
+  addPlayer,
+  updatePlayerRating,
+  deletePlayer,
+  getPlayerById,
+  shufflePlayers,
+  closeRedisConnection
 };
 
 // Run if executed directly
 if (require.main === module) {
   (async () => {
-    await savePlayersToMongo();
-    const top = await getTopRatedPlayers(5);
-    console.log('Top 5 Players:', top.map(p => `${p.name} (${p.rating})`));
-    mongoose.disconnect();
+    try {
+      await savePlayersToRedis();
+      
+      const top = await getTopRatedPlayers(5);
+      console.log('Top 5 Players:', top.map(p => `${p.name} (${p.rating})`));
+      
+      const stats = await getPlayerStats();
+      console.log('Player Statistics:', stats);
+      
+      const indianPlayers = await getPlayersByCountry('India');
+      console.log(`Total Indian Players: ${indianPlayers.length}`);
+      
+      const batsmen = await getPlayersByRole('Batsman');
+      console.log(`Total Batsmen: ${batsmen.length}`);
+      
+    } catch (error) {
+      console.error('❌ Error:', error);
+    } finally {
+      await closeRedisConnection();
+    }
   })();
 }
